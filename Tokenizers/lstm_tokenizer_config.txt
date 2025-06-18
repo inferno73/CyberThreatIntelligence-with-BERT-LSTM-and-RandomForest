@@ -1,0 +1,3 @@
+num_words: 10000
+oov_token: None
+word_index_size: 12387
