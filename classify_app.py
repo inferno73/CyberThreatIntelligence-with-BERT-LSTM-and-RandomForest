@@ -20,12 +20,31 @@ import torch
 from torch.nn.functional import softmax
 
 
-class ModelComparisonApp:
+class CyberThreatClassifierApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Binary Classification Model Comparison")
-        self.root.geometry("900x700")
-        self.root.configure(bg="#f0f0f0")
+        self.root.title("🛡️ CyberGuard AI - Threat Classification System")
+        self.root.geometry("1000x800")
+        
+        # Modern dark cybersecurity theme
+        self.colors = {
+            'bg_primary': '#0a0e1a',      # Deep dark blue
+            'bg_secondary': '#1a1f2e',    # Slightly lighter dark blue
+            'bg_tertiary': '#252b3d',     # Card backgrounds
+            'accent_cyan': '#00ffff',     # Neon cyan
+            'accent_green': '#00ff41',    # Matrix green
+            'accent_red': '#ff073a',      # Alert red
+            'accent_orange': '#ff8c00',   # Warning orange
+            'text_primary': '#ffffff',    # White text
+            'text_secondary': '#b0c4de',  # Light blue text
+            'text_muted': '#718096',      # Muted text
+            'border': '#2d3748',          # Border color
+            'success': '#00ff41',         # Success green
+            'warning': '#ffab00',         # Warning amber
+            'error': '#ff1744'            # Error red
+        }
+        
+        self.setup_theme()
         
         # Model storage
         self.lstm_model = None
@@ -44,120 +63,430 @@ class ModelComparisonApp:
         
         self.setup_ui()
         
+    def setup_theme(self):
+        """Configure the modern cybersecurity theme"""
+        self.root.configure(bg=self.colors['bg_primary'])
+        
+        # Configure ttk styles
+        style = ttk.Style()
+        style.theme_use('clam')
+        
+        # Configure main styles
+        style.configure('Cyber.TFrame', 
+                       background=self.colors['bg_primary'],
+                       borderwidth=0)
+        
+        style.configure('Card.TFrame',
+                       background=self.colors['bg_tertiary'],
+                       relief='flat',
+                       borderwidth=1)
+        
+        style.configure('Header.TLabel',
+                       background=self.colors['bg_primary'],
+                       foreground=self.colors['accent_cyan'],
+                       font=('Consolas', 18, 'bold'))
+        
+        style.configure('Subheader.TLabel',
+                       background=self.colors['bg_tertiary'],
+                       foreground=self.colors['text_primary'],
+                       font=('Segoe UI', 12, 'bold'))
+        
+        style.configure('Cyber.TLabel',
+                       background=self.colors['bg_tertiary'],
+                       foreground=self.colors['text_secondary'],
+                       font=('Segoe UI', 10))
+        
+        style.configure('Status.TLabel',
+                       background=self.colors['bg_tertiary'],
+                       foreground=self.colors['accent_green'],
+                       font=('Consolas', 9))
+        
+        style.configure('Cyber.TButton',
+                       font=('Segoe UI', 10, 'bold'),
+                       borderwidth=1,
+                       focuscolor='none')
+        
+        style.map('Cyber.TButton',
+                 background=[('active', self.colors['accent_cyan']),
+                           ('!active', self.colors['bg_secondary'])],
+                 foreground=[('active', self.colors['bg_primary']),
+                           ('!active', self.colors['text_primary'])],
+                 bordercolor=[('active', self.colors['accent_cyan']),
+                            ('!active', self.colors['border'])])
+        
+        style.configure('Action.TButton',
+                       font=('Segoe UI', 11, 'bold'),
+                       borderwidth=2,
+                       focuscolor='none')
+        
+        style.map('Action.TButton',
+                 background=[('active', self.colors['accent_green']),
+                           ('!active', self.colors['bg_secondary'])],
+                 foreground=[('active', self.colors['bg_primary']),
+                           ('!active', self.colors['accent_green'])],
+                 bordercolor=[('active', self.colors['accent_green']),
+                            ('!active', self.colors['accent_green'])])
+        
+        style.configure('Cyber.TEntry',
+                       fieldbackground=self.colors['bg_secondary'],
+                       foreground=self.colors['text_primary'],
+                       bordercolor=self.colors['border'],
+                       insertcolor=self.colors['accent_cyan'],
+                       font=('Consolas', 9))
+        
+        style.configure('Cyber.TCheckbutton',
+                       background=self.colors['bg_tertiary'],
+                       foreground=self.colors['text_secondary'],
+                       font=('Segoe UI', 10),
+                       focuscolor='none')
+        
+        style.map('Cyber.TCheckbutton',
+                 background=[('active', self.colors['bg_tertiary'])],
+                 foreground=[('active', self.colors['accent_cyan'])])
+        
+    def create_glowing_frame(self, parent, **kwargs):
+        """Create a frame with a subtle glow effect"""
+        outer_frame = tk.Frame(parent, 
+                              bg=self.colors['accent_cyan'], 
+                              bd=1, 
+                              relief='solid')
+        inner_frame = tk.Frame(outer_frame, 
+                              bg=self.colors['bg_tertiary'], 
+                              bd=8,
+                              **kwargs)
+        inner_frame.pack(fill='both', expand=True)
+        return outer_frame, inner_frame
+        
     def setup_ui(self):
-        # Main frame
-        main_frame = ttk.Frame(self.root, padding="20")
-        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        # Main container with padding
+        main_container = tk.Frame(self.root, bg=self.colors['bg_primary'])
+        main_container.pack(fill='both', expand=True, padx=20, pady=20)
         
-        # Configure grid weights
-        self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(0, weight=1)
-        main_frame.columnconfigure(1, weight=1)
+        # Header section with cyber theme
+        header_frame = tk.Frame(main_container, bg=self.colors['bg_primary'])
+        header_frame.pack(fill='x', pady=(0, 20))
         
-        # Title
-        title_label = ttk.Label(main_frame, text="Binary Classification Model Comparison", 
-                               font=("Arial", 16, "bold"))
-        title_label.grid(row=0, column=0, columnspan=3, pady=(0, 20))
+        # Title with cyber styling
+        title_frame = tk.Frame(header_frame, bg=self.colors['bg_primary'])
+        title_frame.pack()
+        
+        title_label = tk.Label(title_frame,
+                              text="CYBERGUARD AI",  # Removed shield emoji
+                              bg=self.colors['bg_primary'],
+                              fg=self.colors['accent_cyan'],
+                              font=('Consolas', 24, 'bold'))
+        title_label.pack()
+        
+        subtitle_label = tk.Label(title_frame,
+                                 text="Advanced Threat Classification System",
+                                 bg=self.colors['bg_primary'],
+                                 fg=self.colors['text_secondary'],
+                                 font=('Segoe UI', 12))
+        subtitle_label.pack(pady=(0, 5))
+        
+        # Status indicator
+        self.status_indicator = tk.Label(title_frame,
+                                        text="SYSTEM OFFLINE",  # Removed dot emoji
+                                        bg=self.colors['bg_primary'],
+                                        fg=self.colors['accent_red'],
+                                        font=('Consolas', 10, 'bold'))
+        self.status_indicator.pack()
+        
+        # Main content area with scrollable canvas
+        canvas_frame = tk.Frame(main_container, bg=self.colors['bg_primary'])
+        canvas_frame.pack(fill='both', expand=True)
+        
+        canvas = tk.Canvas(canvas_frame, bg=self.colors['bg_primary'], highlightthickness=0)
+        scrollbar = tk.Scrollbar(canvas_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['bg_primary'])
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
         
         # Model loading section
-        model_frame = ttk.LabelFrame(main_frame, text="Load Models", padding="10")
-        model_frame.grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 20))
-        model_frame.columnconfigure(1, weight=1)
+        model_outer, model_frame = self.create_glowing_frame(scrollable_frame)
+        model_outer.pack(fill='x', pady=(0, 20))
         
-        # LSTM Model
-        ttk.Label(model_frame, text="LSTM Model (.keras):").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.lstm_path_var = tk.StringVar()
-        ttk.Entry(model_frame, textvariable=self.lstm_path_var, state="readonly").grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(10, 5), pady=5)
-        ttk.Button(model_frame, text="Browse", command=lambda: self.browse_model("lstm")).grid(row=0, column=2, padx=(5, 0), pady=5)
+        # Section header
+        header_frame = tk.Frame(model_frame, bg=self.colors['bg_tertiary'])
+        header_frame.pack(fill='x', pady=(0, 15))
         
-        # BERT Model
-        ttk.Label(model_frame, text="BERT Model (folder):").grid(row=1, column=0, sticky=tk.W, pady=5)
-        self.bert_path_var = tk.StringVar()
-        ttk.Entry(model_frame, textvariable=self.bert_path_var, state="readonly").grid(row=1, column=1, sticky=(tk.W, tk.E), padx=(10, 5), pady=5)
-        ttk.Button(model_frame, text="Browse", command=lambda: self.browse_model("bert")).grid(row=1, column=2, padx=(5, 0), pady=5)
+        tk.Label(header_frame,
+                text="AI MODEL CONFIGURATION",  # Removed wrench emoji
+                bg=self.colors['bg_tertiary'],
+                fg=self.colors['accent_cyan'],
+                font=('Consolas', 14, 'bold')).pack(side='left')
         
-        # Random Forest Model
-        ttk.Label(model_frame, text="Random Forest (.joblib):").grid(row=2, column=0, sticky=tk.W, pady=5)
-        self.rf_path_var = tk.StringVar()
-        ttk.Entry(model_frame, textvariable=self.rf_path_var, state="readonly").grid(row=2, column=1, sticky=(tk.W, tk.E), padx=(10, 5), pady=5)
-        ttk.Button(model_frame, text="Browse", command=lambda: self.browse_model("rf")).grid(row=2, column=2, padx=(5, 0), pady=5)
+        tk.Label(header_frame,
+                text="Load your trained models for threat analysis",
+                bg=self.colors['bg_tertiary'],
+                fg=self.colors['text_muted'],
+                font=('Segoe UI', 9)).pack(side='right')
         
-        # Augmenter (Optional)
-        ttk.Label(model_frame, text="Augmenter (optional .pkl):").grid(row=3, column=0, sticky=tk.W, pady=5)
-        self.aug_path_var = tk.StringVar()
-        ttk.Entry(model_frame, textvariable=self.aug_path_var, state="readonly").grid(row=3, column=1, sticky=(tk.W, tk.E), padx=(10, 5), pady=5)
-        ttk.Button(model_frame, text="Browse", command=lambda: self.browse_model("augmenter")).grid(row=3, column=2, padx=(5, 0), pady=5)
+        # Model selection grid
+        models_info = [
+            ("LSTM Neural Network", "Deep learning model for sequence analysis", "lstm"),
+            ("BERT Transformer", "Bidirectional encoder for context understanding", "bert"),
+            ("Random Forest", "Ensemble classifier for robust predictions", "rf"),
+            ("Text Augmenter", "Optional data augmentation module", "augmenter")
+        ]
         
-        # Load button
-        self.load_button = ttk.Button(model_frame, text="Load All Models", command=self.load_models)
-        self.load_button.grid(row=4, column=0, columnspan=3, pady=10)
+        self.path_vars = {}
         
-        # Status label
-        self.status_var = tk.StringVar(value="Select model files and click 'Load All Models'")
-        self.status_label = ttk.Label(model_frame, textvariable=self.status_var, foreground="blue")
-        self.status_label.grid(row=5, column=0, columnspan=3, pady=5)
+        for i, (name, desc, model_type) in enumerate(models_info):
+            row_frame = tk.Frame(model_frame, bg=self.colors['bg_tertiary'])
+            row_frame.pack(fill='x', pady=8)
+            row_frame.columnconfigure(1, weight=1)
+            
+            # Model info
+            info_frame = tk.Frame(row_frame, bg=self.colors['bg_tertiary'])
+            info_frame.grid(row=0, column=0, sticky='w', padx=(0, 15))
+            
+            tk.Label(info_frame,
+                    text=name,
+                    bg=self.colors['bg_tertiary'],
+                    fg=self.colors['text_primary'],
+                    font=('Segoe UI', 11, 'bold')).pack(anchor='w')
+            
+            tk.Label(info_frame,
+                    text=desc,
+                    bg=self.colors['bg_tertiary'],
+                    fg=self.colors['text_muted'],
+                    font=('Segoe UI', 8)).pack(anchor='w')
+            
+            # Path entry
+            self.path_vars[model_type] = tk.StringVar()
+            path_entry = tk.Entry(row_frame,
+                                 textvariable=self.path_vars[model_type],
+                                 bg=self.colors['bg_primary'],  # Changed from bg_secondary for better contrast
+                                 fg=self.colors['text_primary'],
+                                 font=('Consolas', 9),
+                                 bd=1,
+                                 relief='solid')
+            path_entry.grid(row=0, column=1, sticky='ew', padx=(0, 10))
+            
+            # Browse button
+            browse_btn = tk.Button(row_frame,
+                                  text="Browse",  # Removed folder emoji
+                                  bg=self.colors['bg_secondary'],
+                                  fg=self.colors['accent_cyan'],
+                                  font=('Segoe UI', 10),
+                                  bd=1,
+                                  relief='solid',
+                                  width=8,  # Increased width for text
+                                  command=lambda mt=model_type: self.browse_model(mt))
+            browse_btn.grid(row=0, column=2)
+        
+        # Load button and status
+        control_frame = tk.Frame(model_frame, bg=self.colors['bg_tertiary'])
+        control_frame.pack(fill='x', pady=(15, 0))
+        
+        self.load_button = tk.Button(control_frame,
+                                    text="INITIALIZE AI MODELS",  # Removed rocket emoji
+                                    bg=self.colors['bg_secondary'],
+                                    fg=self.colors['accent_green'],
+                                    font=('Consolas', 12, 'bold'),
+                                    bd=2,
+                                    relief='solid',
+                                    pady=8,
+                                    command=self.load_models)
+        self.load_button.pack(pady=(0, 10))
+        
+        self.status_var = tk.StringVar(value="Awaiting model configuration...") # Removed red circle emoji
+        self.status_label = tk.Label(control_frame,
+                                    textvariable=self.status_var,
+                                    bg=self.colors['bg_tertiary'],
+                                    fg=self.colors['text_muted'],
+                                    font=('Consolas', 9))
+        self.status_label.pack()
         
         # Input section
-        input_frame = ttk.LabelFrame(main_frame, text="Text Input", padding="10")
-        input_frame.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 20))
-        input_frame.columnconfigure(0, weight=1)
+        input_outer, input_frame = self.create_glowing_frame(scrollable_frame)
+        input_outer.pack(fill='x', pady=(0, 20))
         
-        # Text input
-        self.text_input = tk.Text(input_frame, height=5, width=70, wrap=tk.WORD)
-        self.text_input.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        # Input header
+        input_header = tk.Frame(input_frame, bg=self.colors['bg_tertiary'])
+        input_header.pack(fill='x', pady=(0, 15))
         
-        # Option to use augmentation
+        tk.Label(input_header,
+                text="THREAT ANALYSIS INPUT",  # Removed memo emoji
+                bg=self.colors['bg_tertiary'],
+                fg=self.colors['accent_cyan'],
+                font=('Consolas', 14, 'bold')).pack(side='left')
+        
+        tk.Label(input_header,
+                text="Enter suspicious text for classification",
+                bg=self.colors['bg_tertiary'],
+                fg=self.colors['text_muted'],
+                font=('Segoe UI', 9)).pack(side='right')
+        
+        # Text input with cyber styling
+        text_frame = tk.Frame(input_frame, bg=self.colors['bg_secondary'], bd=1, relief='solid')
+        text_frame.pack(fill='x', pady=(0, 15))
+        
+        tk.Label(text_frame,
+                text="INPUT TEXT:",
+                bg=self.colors['bg_secondary'],
+                fg=self.colors['accent_cyan'],
+                font=('Consolas', 9, 'bold')).pack(anchor='w', padx=8, pady=(8, 0))
+        
+        self.text_input = tk.Text(text_frame,
+                                 height=6,
+                                 bg=self.colors['bg_primary'],  # Changed to primary bg for better contrast
+                                 fg=self.colors['text_primary'],
+                                 font=('Consolas', 10),
+                                 bd=1,  # Added border
+                                 relief='solid',
+                                 wrap=tk.WORD,
+                                 insertbackground=self.colors['accent_cyan'])
+        self.text_input.pack(fill='x', padx=8, pady=(0, 8))
+        
+        # Options and controls
+        options_frame = tk.Frame(input_frame, bg=self.colors['bg_tertiary'])
+        options_frame.pack(fill='x', pady=(0, 15))
+        
         self.use_augmentation = tk.BooleanVar(value=False)
-        aug_checkbox = ttk.Checkbutton(input_frame, text="Apply augmentation to input text (if augmenter loaded)", 
-                                      variable=self.use_augmentation)
-        aug_checkbox.grid(row=1, column=0, sticky=tk.W, pady=(0, 10))
+        aug_check = tk.Checkbutton(options_frame,
+                                  text="Enable text augmentation (if available)",  # Removed lightning emoji
+                                  variable=self.use_augmentation,
+                                  bg=self.colors['bg_tertiary'],
+                                  fg=self.colors['text_secondary'],
+                                  selectcolor=self.colors['bg_secondary'],
+                                  activebackground=self.colors['bg_tertiary'],
+                                  activeforeground=self.colors['accent_cyan'],
+                                  font=('Segoe UI', 10))
+        aug_check.pack(side='left')
         
-        # Predict button
-        self.predict_button = ttk.Button(input_frame, text="Predict", command=self.predict, state="disabled")
-        self.predict_button.grid(row=2, column=0, pady=5)
+        # Action buttons
+        action_frame = tk.Frame(input_frame, bg=self.colors['bg_tertiary'])
+        action_frame.pack(fill='x')
         
-        # Clear results button
-        self.clear_button = ttk.Button(input_frame, text="Clear Results", command=self.clear_results)
-        self.clear_button.grid(row=2, column=1, padx=(10, 0), pady=5)
+        self.predict_button = tk.Button(action_frame,
+                                       text="ANALYZE THREAT",  # Removed magnifying glass emoji
+                                       bg=self.colors['bg_secondary'],
+                                       fg=self.colors['accent_green'],
+                                       font=('Consolas', 12, 'bold'),
+                                       bd=2,
+                                       relief='solid',
+                                       pady=8,
+                                       state='disabled',
+                                       command=self.predict)
+        self.predict_button.pack(side='left', padx=(0, 10))
+        
+        clear_button = tk.Button(action_frame,
+                                text="CLEAR",  # Removed trash emoji
+                                bg=self.colors['bg_secondary'],
+                                fg=self.colors['accent_orange'],
+                                font=('Consolas', 10, 'bold'),
+                                bd=2,
+                                relief='solid',
+                                pady=8,
+                                command=self.clear_results)
+        clear_button.pack(side='left')
         
         # Results section
-        results_frame = ttk.LabelFrame(main_frame, text="Predictions", padding="15")
-        results_frame.grid(row=3, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 20))
-        results_frame.columnconfigure(1, weight=1)
-        results_frame.columnconfigure(2, weight=1)
-        main_frame.rowconfigure(3, weight=1)
+        results_outer, results_frame = self.create_glowing_frame(scrollable_frame)
+        results_outer.pack(fill='both', expand=True)
         
-        # Results display with better formatting
-        models = ["LSTM", "BERT", "Random Forest"]
+        # Results header
+        results_header = tk.Frame(results_frame, bg=self.colors['bg_tertiary'])
+        results_header.pack(fill='x', pady=(0, 20))
+        
+        tk.Label(results_header,
+                text="THREAT CLASSIFICATION RESULTS",  # Removed chart emoji
+                bg=self.colors['bg_tertiary'],
+                fg=self.colors['accent_cyan'],
+                font=('Consolas', 14, 'bold')).pack(side='left')
+        
+        tk.Label(results_header,
+                text="AI model predictions and confidence scores",
+                bg=self.colors['bg_tertiary'],
+                fg=self.colors['text_muted'],
+                font=('Segoe UI', 9)).pack(side='right')
+        
+        # Results grid with modern cards
+        results_grid = tk.Frame(results_frame, bg=self.colors['bg_tertiary'])
+        results_grid.pack(fill='both', expand=True)
+        
+        models = [
+            ("LSTM", "Neural Network", "LSTM"),
+            ("BERT", "Transformer", "BERT"), 
+            ("Random Forest", "Ensemble", "Random Forest")
+        ]
+        
         self.result_vars = {}
         self.confidence_vars = {}
+        self.result_frames = {}
         
-        # Header row
-        ttk.Label(results_frame, text="Model", font=("Arial", 12, "bold")).grid(row=0, column=0, sticky=tk.W, pady=(0, 10))
-        ttk.Label(results_frame, text="Prediction", font=("Arial", 12, "bold")).grid(row=0, column=1, sticky=tk.W, padx=(20, 0), pady=(0, 10))
-        ttk.Label(results_frame, text="Confidence", font=("Arial", 12, "bold")).grid(row=0, column=2, sticky=tk.W, padx=(20, 0), pady=(0, 10))
+        for i, (icon_name, subtitle, model_key) in enumerate(models):
+            # Create result card
+            card_frame = tk.Frame(results_grid, 
+                                 bg=self.colors['bg_secondary'], 
+                                 bd=1, 
+                                 relief='solid')
+            card_frame.pack(fill='x', pady=8)
+            
+            self.result_frames[model_key] = card_frame
+            
+            # Card header
+            header = tk.Frame(card_frame, bg=self.colors['bg_secondary'])
+            header.pack(fill='x', padx=15, pady=(12, 8))
+            
+            tk.Label(header,
+                    text=icon_name,
+                    bg=self.colors['bg_secondary'],
+                    fg=self.colors['text_primary'],
+                    font=('Consolas', 12, 'bold')).pack(side='left')
+            
+            tk.Label(header,
+                    text=subtitle,
+                    bg=self.colors['bg_secondary'],
+                    fg=self.colors['text_muted'],
+                    font=('Segoe UI', 9)).pack(side='left', padx=(8, 0))
+            
+            # Status indicator for this model
+            status_dot = tk.Label(header,
+                                 text="OFF",  # Replaced circle emoji with text
+                                 bg=self.colors['bg_secondary'],
+                                 fg=self.colors['text_muted'],
+                                 font=('Segoe UI', 10, 'bold'))
+            status_dot.pack(side='right')
+            
+            # Prediction display
+            pred_frame = tk.Frame(card_frame, bg=self.colors['bg_secondary'])
+            pred_frame.pack(fill='x', padx=15, pady=(0, 12))
+            
+            # Prediction result
+            self.result_vars[model_key] = tk.StringVar(value="Awaiting analysis...") # Removed hourglass emoji
+            pred_label = tk.Label(pred_frame,
+                                 textvariable=self.result_vars[model_key],
+                                 bg=self.colors['bg_secondary'],
+                                 fg=self.colors['text_secondary'],
+                                 font=('Consolas', 11),
+                                 justify='left')
+            pred_label.pack(anchor='w')
+            
+            # Confidence score
+            self.confidence_vars[model_key] = tk.StringVar(value="")
+            conf_label = tk.Label(pred_frame,
+                                 textvariable=self.confidence_vars[model_key],
+                                 bg=self.colors['bg_secondary'],
+                                 fg=self.colors['text_muted'],
+                                 font=('Consolas', 9))
+            conf_label.pack(anchor='w', pady=(4, 0))
         
-        # Separator
-        ttk.Separator(results_frame, orient='horizontal').grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=5)
-        
-        for i, model_name in enumerate(models):
-            row = i + 2
-            
-            # Model name
-            model_label = ttk.Label(results_frame, text=f"{model_name}:", font=("Arial", 11, "bold"))
-            model_label.grid(row=row, column=0, sticky=tk.W, pady=8)
-            
-            # Prediction
-            self.result_vars[model_name] = tk.StringVar(value="Not predicted")
-            pred_label = ttk.Label(results_frame, textvariable=self.result_vars[model_name], 
-                                  font=("Arial", 11), background="white", relief="sunken", padding=(5, 2))
-            pred_label.grid(row=row, column=1, sticky=(tk.W, tk.E), padx=(20, 5), pady=8)
-            
-            # Confidence
-            self.confidence_vars[model_name] = tk.StringVar(value="")
-            conf_label = ttk.Label(results_frame, textvariable=self.confidence_vars[model_name], 
-                                  font=("Arial", 10), foreground="gray", background="white", relief="sunken", padding=(5, 2))
-            conf_label.grid(row=row, column=2, sticky=(tk.W, tk.E), padx=(5, 0), pady=8)
+        # Bind mouse wheel to canvas
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
     
     def browse_model(self, model_type):
         if model_type == "lstm":
@@ -166,7 +495,7 @@ class ModelComparisonApp:
                 filetypes=[("Keras files", "*.keras"), ("All files", "*.*")]
             )
             if file_path:
-                self.lstm_path_var.set(file_path)
+                self.path_vars['lstm'].set(file_path)
                 self.lstm_path = file_path
                 
         elif model_type == "bert":
@@ -174,7 +503,7 @@ class ModelComparisonApp:
                 title="Select BERT Model Folder"
             )
             if folder_path:
-                self.bert_path_var.set(folder_path)
+                self.path_vars['bert'].set(folder_path)
                 self.bert_path = folder_path
                 
         elif model_type == "rf":
@@ -183,7 +512,7 @@ class ModelComparisonApp:
                 filetypes=[("Joblib files", "*.joblib"), ("All files", "*.*")]
             )
             if file_path:
-                self.rf_path_var.set(file_path)
+                self.path_vars['rf'].set(file_path)
                 self.rf_path = file_path
                 
         elif model_type == "augmenter":
@@ -192,14 +521,36 @@ class ModelComparisonApp:
                 filetypes=[("Pickle files", "*.pkl"), ("All files", "*.*")]
             )
             if file_path:
-                self.aug_path_var.set(file_path)
+                self.path_vars['augmenter'].set(file_path)
                 self.aug_path = file_path
+    
+    def update_system_status(self, status, color):
+        """Update the main system status indicator"""
+        status_texts = {
+            'offline': "SYSTEM OFFLINE",
+            'loading': "INITIALIZING...",
+            'online': "SYSTEM ONLINE",
+            'analyzing': "ANALYZING THREAT..."
+        }
+        
+        colors = {
+            'offline': self.colors['accent_red'],
+            'loading': self.colors['accent_orange'],
+            'online': self.colors['accent_green'],
+            'analyzing': self.colors['accent_cyan']
+        }
+        
+        self.status_indicator.config(
+            text=status_texts.get(status, status),
+            fg=colors.get(color, self.colors['text_muted'])
+        )
     
     def load_models(self):
         """Load all models in a separate thread to prevent UI freezing"""
         def load_thread():
             try:
-                self.root.after(0, lambda: self.status_var.set("Loading models..."))
+                self.root.after(0, lambda: self.update_system_status('loading', 'loading'))
+                self.root.after(0, lambda: self.status_var.set("Initializing AI systems..."))
                 self.root.after(0, lambda: self.load_button.config(state="disabled"))
                 
                 models_loaded = 0
@@ -207,48 +558,57 @@ class ModelComparisonApp:
                 
                 # Load LSTM
                 if self.lstm_path and os.path.exists(self.lstm_path):
-                    self.root.after(0, lambda: self.status_var.set("Loading LSTM model..."))
+                    self.root.after(0, lambda: self.status_var.set("Loading LSTM Neural Network..."))
                     self.lstm_model = tf.keras.models.load_model(self.lstm_path)
                     models_loaded += 1
-                    self.root.after(0, lambda: self.status_var.set(f"Loaded {models_loaded}/{total_models} models - LSTM loaded"))
+                    self.root.after(0, lambda: self.status_var.set(f"LSTM loaded ({models_loaded}/{total_models})"))
                 
                 # Load BERT
                 if self.bert_path and os.path.exists(self.bert_path):
-                    self.root.after(0, lambda: self.status_var.set("Loading BERT model..."))
+                    self.root.after(0, lambda: self.status_var.set("Loading BERT Transformer..."))
                     self.bert_tokenizer = AutoTokenizer.from_pretrained(self.bert_path)
                     self.bert_model = AutoModelForSequenceClassification.from_pretrained(self.bert_path)
                     self.bert_model.eval()
                     models_loaded += 1
-                    self.root.after(0, lambda: self.status_var.set(f"Loaded {models_loaded}/{total_models} models - BERT loaded"))
+                    self.root.after(0, lambda: self.status_var.set(f"BERT loaded ({models_loaded}/{total_models})"))
                 
                 # Load Random Forest
                 if self.rf_path and os.path.exists(self.rf_path):
-                    self.root.after(0, lambda: self.status_var.set("Loading Random Forest model..."))
+                    self.root.after(0, lambda: self.status_var.set("Loading Random Forest..."))
                     self.rf_model = joblib.load(self.rf_path)
                     models_loaded += 1
-                    self.root.after(0, lambda: self.status_var.set(f"Loaded {models_loaded}/{total_models} models - Random Forest loaded"))
+                    self.root.after(0, lambda: self.status_var.set(f"Random Forest loaded ({models_loaded}/{total_models})"))
                 
                 # Load Augmenter (Optional)
                 if hasattr(self, 'aug_path') and self.aug_path and os.path.exists(self.aug_path):
                     try:
-                        self.root.after(0, lambda: self.status_var.set("Loading Augmenter..."))
+                        self.root.after(0, lambda: self.status_var.set("Loading text augmenter..."))
                         with open(self.aug_path, 'rb') as f:
                             self.augmenter = pickle.load(f)
                         self.root.after(0, lambda: self.status_var.set("Augmenter loaded successfully!"))
                     except Exception as e:
-                        self.root.after(0, lambda: self.status_var.set(f"Warning: Could not load augmenter - {str(e)}"))
+                        self.root.after(0, lambda: self.status_var.set(f"Augmenter failed: {str(e)}"))
                         print(f"Augmenter loading failed: {e}")
                 
                 if models_loaded > 0:
-                    self.root.after(0, lambda: self.status_var.set(f"Successfully loaded {models_loaded}/{total_models} models!"))
+                    self.root.after(0, lambda: self.update_system_status('online', 'online'))
+                    self.root.after(0, lambda: self.status_var.set(f"System ready! {models_loaded}/{total_models} AI models active"))
                     self.root.after(0, lambda: self.predict_button.config(state="normal"))
+                    
+                    # Update predict button appearance
+                    self.root.after(0, lambda: self.predict_button.config(
+                        bg=self.colors['accent_green'],
+                        fg=self.colors['bg_primary']
+                    ))
                 else:
-                    self.root.after(0, lambda: self.status_var.set("No models loaded. Please check file paths."))
+                    self.root.after(0, lambda: self.update_system_status('offline', 'offline'))
+                    self.root.after(0, lambda: self.status_var.set("No models loaded. Check file paths."))
                     
             except Exception as e:
-                error_msg = f"Error loading models: {str(e)}"
+                error_msg = f"Initialization failed: {str(e)}"
                 self.root.after(0, lambda: self.status_var.set(error_msg))
-                self.root.after(0, lambda: messagebox.showerror("Error", f"Failed to load models:\n{str(e)}"))
+                self.root.after(0, lambda: self.update_system_status('offline', 'offline'))
+                self.root.after(0, lambda: messagebox.showerror("System Error", f"Failed to initialize AI models:\n{str(e)}"))
             finally:
                 self.root.after(0, lambda: self.load_button.config(state="normal"))
         
@@ -260,23 +620,58 @@ class ModelComparisonApp:
     def clear_results(self):
         """Clear all prediction results"""
         for model_name in ["LSTM", "BERT", "Random Forest"]:
-            self.result_vars[model_name].set("Not predicted")
+            self.result_vars[model_name].set("Awaiting analysis...")
             self.confidence_vars[model_name].set("")
+            # Reset card colors
+            if model_name in self.result_frames:
+                self.result_frames[model_name].config(bg=self.colors['bg_secondary'])
+        
+        self.text_input.delete("1.0", tk.END)
     
     def update_result_display(self, model_name, prediction_result):
         """Update the display with prediction results"""
         if 'error' in prediction_result:
-            self.result_vars[model_name].set(f"Error: {prediction_result.get('error', 'Unknown error')}")
+            self.result_vars[model_name].set(f"ERROR: {prediction_result.get('error', 'Unknown error')}")
             self.confidence_vars[model_name].set("")
+            # Set error color
+            if model_name in self.result_frames:
+                self.result_frames[model_name].config(bg='#2d1b1b')  # Dark red tint
         else:
-            class_name = "Positive" if prediction_result['class'] == 1 else "Negative"
-            self.result_vars[model_name].set(f"{class_name} (Class {prediction_result['class']})")
-            self.confidence_vars[model_name].set(f"Confidence: {prediction_result['confidence']:.3f}")
+            confidence = prediction_result['confidence']
+            
+            # Determine threat level color and styling
+            if prediction_result['class'] == 1:  # Threat detected
+                if confidence > 0.8:
+                    threat_color = self.colors['accent_red']
+                    threat_text = "HIGH THREAT"
+                    card_bg = '#2d1b1b'  # Dark red background
+                elif confidence > 0.6:
+                    threat_color = self.colors['accent_orange']
+                    threat_text = "MEDIUM THREAT"
+                    card_bg = '#2d251b'  # Dark orange background
+                else:
+                    threat_color = self.colors['warning']
+                    threat_text = "LOW THREAT"
+                    card_bg = '#2d2b1b'  # Dark yellow background
+            else:  # Benign
+                threat_color = self.colors['accent_green']
+                threat_text = "BENIGN"
+                card_bg = '#1b2d1b'  # Dark green background
+            
+            self.result_vars[model_name].set(f"{threat_text} (Class {prediction_result['class']})")
+            
+            # Format confidence with visual indicator
+            conf_bar = "█" * int(confidence * 10) + "░" * (10 - int(confidence * 10))
+            self.confidence_vars[model_name].set(f"Confidence: {confidence:.3f} [{conf_bar}]")
+            
+            # Update card background color
+            if model_name in self.result_frames:
+                self.result_frames[model_name].config(bg=card_bg)
             
             # Show augmentation status if it was applied
             if prediction_result.get('augmented', False):
                 current_text = self.result_vars[model_name].get()
-                self.result_vars[model_name].set(f"{current_text} [Augmented]")
+                self.result_vars[model_name].set(f"{current_text} [AUG]")
     
     def apply_augmentation(self, text):
         """Apply augmentation to input text if augmenter is loaded and enabled"""
@@ -305,18 +700,21 @@ class ModelComparisonApp:
         text = self.text_input.get("1.0", tk.END).strip()
         
         if not text:
-            messagebox.showwarning("Warning", "Please enter some text to predict.")
+            messagebox.showwarning("Input Required", "Please enter text to analyze for threats.")
             return
         
         def predict_thread():
             try:
+                # Update system status
+                self.root.after(0, lambda: self.update_system_status('analyzing', 'analyzing'))
+                
                 # Clear previous results
                 self.root.after(0, self.clear_results)
                 
                 # LSTM Prediction
                 if self.lstm_model is not None:
                     try:
-                        self.root.after(0, lambda: self.result_vars["LSTM"].set("Predicting..."))
+                        self.root.after(0, lambda: self.result_vars["LSTM"].set("Analyzing with LSTM..."))
                         lstm_pred = self.predict_lstm(text)
                         self.root.after(0, lambda: self.update_result_display("LSTM", lstm_pred))
                         print(f"LSTM prediction: {lstm_pred}")
@@ -330,7 +728,7 @@ class ModelComparisonApp:
                 # BERT Prediction
                 if self.bert_model is not None and self.bert_tokenizer is not None:
                     try:
-                        self.root.after(0, lambda: self.result_vars["BERT"].set("Predicting..."))
+                        self.root.after(0, lambda: self.result_vars["BERT"].set("Analyzing with BERT..."))
                         bert_pred = self.predict_bert(text)
                         self.root.after(0, lambda: self.update_result_display("BERT", bert_pred))
                         print(f"BERT prediction: {bert_pred}")
@@ -344,7 +742,7 @@ class ModelComparisonApp:
                 # Random Forest Prediction
                 if self.rf_model is not None:
                     try:
-                        self.root.after(0, lambda: self.result_vars["Random Forest"].set("Predicting..."))
+                        self.root.after(0, lambda: self.result_vars["Random Forest"].set("Analyzing with Random Forest..."))
                         rf_pred = self.predict_rf(text)
                         self.root.after(0, lambda: self.update_result_display("Random Forest", rf_pred))
                         print(f"Random Forest prediction: {rf_pred}")
@@ -354,9 +752,13 @@ class ModelComparisonApp:
                         print(f"Random Forest error: {e}")
                 else:
                     self.root.after(0, lambda: self.result_vars["Random Forest"].set("Model not loaded"))
+                
+                # Update system status back to online
+                self.root.after(0, lambda: self.update_system_status('online', 'online'))
                     
             except Exception as e:
-                self.root.after(0, lambda: messagebox.showerror("Prediction Error", f"An error occurred during prediction:\n{str(e)}"))
+                self.root.after(0, lambda: messagebox.showerror("Analysis Error", f"Threat analysis failed:\n{str(e)}"))
+                self.root.after(0, lambda: self.update_system_status('online', 'online'))
         
         # Start prediction in separate thread
         thread = threading.Thread(target=predict_thread)
@@ -400,7 +802,7 @@ class ModelComparisonApp:
                 'augmented': was_augmented
             }
         except Exception as e:
-            return {'error': f"LSTM prediction failed: {str(e)}"}
+            return {'error': f"LSTM analysis failed: {str(e)}"}
     
     def predict_bert(self, text):
         """Predict using BERT model"""
@@ -430,7 +832,7 @@ class ModelComparisonApp:
                 'augmented': was_augmented
             }
         except Exception as e:
-            return {'error': f"BERT prediction failed: {str(e)}"}
+            return {'error': f"BERT analysis failed: {str(e)}"}
     
     def predict_rf(self, text):
         """Predict using Random Forest with TF-IDF vectorization"""
@@ -463,12 +865,32 @@ class ModelComparisonApp:
                 'augmented': was_augmented
             }
         except Exception as e:
-            return {'error': f"Random Forest prediction failed: {str(e)}"}
+            return {'error': f"Random Forest analysis failed: {str(e)}"}
 
 
 def main():
     root = tk.Tk()
-    app = ModelComparisonApp(root)
+    app = CyberThreatClassifierApp(root)
+    
+    # Add window icon if available (optional)
+    try:
+        # You can add an icon file here
+        # root.iconbitmap('cyber_icon.ico')
+        pass
+    except:
+        pass
+    
+    # Make window resizable but set minimum size
+    root.minsize(900, 700)
+    
+    # Center window on screen - FIXED VERSION
+    root.update_idletasks()
+    width = 1000  # Use the actual geometry width
+    height = 800  # Use the actual geometry height
+    x = (root.winfo_screenwidth() // 2) - (width // 2)
+    y = (root.winfo_screenheight() // 2) - (height // 2)
+    root.geometry(f'{width}x{height}+{x}+{y}')
+    
     root.mainloop()
 
 
