@@ -23,8 +23,8 @@ from torch.nn.functional import softmax
 class CyberThreatClassifierApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("🛡️ CyberGuard AI - Threat Classification System")
-        self.root.geometry("1000x800")
+        self.root.title("CyberGuard AI - Threat Classification System")
+        # self.root.geometry("1200x1080")
         
         # Modern dark cybersecurity theme
         self.colors = {
@@ -41,7 +41,9 @@ class CyberThreatClassifierApp:
             'border': '#2d3748',          # Border color
             'success': '#00ff41',         # Success green
             'warning': '#ffab00',         # Warning amber
-            'error': '#ff1744'            # Error red
+            'error': '#ff1744',           # Error red
+            'input_bg': '#1a1f2e',        # Input background
+            'input_text': '#ffffff'       # Input text color
         }
         
         self.setup_theme()
@@ -128,8 +130,8 @@ class CyberThreatClassifierApp:
                             ('!active', self.colors['accent_green'])])
         
         style.configure('Cyber.TEntry',
-                       fieldbackground=self.colors['bg_secondary'],
-                       foreground=self.colors['text_primary'],
+                       fieldbackground=self.colors['input_bg'],
+                       foreground=self.colors['input_text'],
                        bordercolor=self.colors['border'],
                        insertcolor=self.colors['accent_cyan'],
                        font=('Consolas', 9))
@@ -170,49 +172,30 @@ class CyberThreatClassifierApp:
         title_frame = tk.Frame(header_frame, bg=self.colors['bg_primary'])
         title_frame.pack()
         
-        title_label = tk.Label(title_frame,
-                              text="CYBERGUARD AI",  # Removed shield emoji
+        title_label = tk.Label(title_frame, 
+                              text="CYBERGUARD AI",
                               bg=self.colors['bg_primary'],
                               fg=self.colors['accent_cyan'],
                               font=('Consolas', 24, 'bold'))
         title_label.pack()
         
-        subtitle_label = tk.Label(title_frame,
-                                 text="Advanced Threat Classification System",
-                                 bg=self.colors['bg_primary'],
-                                 fg=self.colors['text_secondary'],
-                                 font=('Segoe UI', 12))
-        subtitle_label.pack(pady=(0, 5))
         
-        # Status indicator
-        self.status_indicator = tk.Label(title_frame,
-                                        text="SYSTEM OFFLINE",  # Removed dot emoji
-                                        bg=self.colors['bg_primary'],
-                                        fg=self.colors['accent_red'],
-                                        font=('Consolas', 10, 'bold'))
-        self.status_indicator.pack()
+        # Create main content frame with two columns
+        content_frame = tk.Frame(main_container, bg=self.colors['bg_primary'])
+        content_frame.pack(fill='both', expand=True)
+        content_frame.columnconfigure(0, weight=1)
+        content_frame.columnconfigure(1, weight=1)
         
-        # Main content area with scrollable canvas
-        canvas_frame = tk.Frame(main_container, bg=self.colors['bg_primary'])
-        canvas_frame.pack(fill='both', expand=True)
+        # Left column - Model loading and input
+        left_frame = tk.Frame(content_frame, bg=self.colors['bg_primary'])
+        left_frame.grid(row=0, column=0, sticky='nsew', padx=(0, 10))
         
-        canvas = tk.Canvas(canvas_frame, bg=self.colors['bg_primary'], highlightthickness=0)
-        scrollbar = tk.Scrollbar(canvas_frame, orient="vertical", command=canvas.yview)
-        scrollable_frame = tk.Frame(canvas, bg=self.colors['bg_primary'])
+        # Right column - Results
+        right_frame = tk.Frame(content_frame, bg=self.colors['bg_primary'])
+        right_frame.grid(row=0, column=1, sticky='nsew', padx=(10, 0))
         
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
-        
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-        
-        # Model loading section
-        model_outer, model_frame = self.create_glowing_frame(scrollable_frame)
+        # Model loading section (left column)
+        model_outer, model_frame = self.create_glowing_frame(left_frame)
         model_outer.pack(fill='x', pady=(0, 20))
         
         # Section header
@@ -220,7 +203,7 @@ class CyberThreatClassifierApp:
         header_frame.pack(fill='x', pady=(0, 15))
         
         tk.Label(header_frame,
-                text="AI MODEL CONFIGURATION",  # Removed wrench emoji
+                text="AI MODEL CONFIGURATION",
                 bg=self.colors['bg_tertiary'],
                 fg=self.colors['accent_cyan'],
                 font=('Consolas', 14, 'bold')).pack(side='left')
@@ -231,7 +214,7 @@ class CyberThreatClassifierApp:
                 fg=self.colors['text_muted'],
                 font=('Segoe UI', 9)).pack(side='right')
         
-        # Model selection grid
+        # Model selection grid with proper alignment
         models_info = [
             ("LSTM Neural Network", "Deep learning model for sequence analysis", "lstm"),
             ("BERT Transformer", "Bidirectional encoder for context understanding", "bert"),
@@ -242,46 +225,57 @@ class CyberThreatClassifierApp:
         self.path_vars = {}
         
         for i, (name, desc, model_type) in enumerate(models_info):
+            # Use grid throughout for consistency
             row_frame = tk.Frame(model_frame, bg=self.colors['bg_tertiary'])
-            row_frame.pack(fill='x', pady=8)
+            row_frame.pack(fill='x', pady=5)
             row_frame.columnconfigure(1, weight=1)
             
-            # Model info
-            info_frame = tk.Frame(row_frame, bg=self.colors['bg_tertiary'])
-            info_frame.grid(row=0, column=0, sticky='w', padx=(0, 15))
+            # Model info frame with proper height
+            info_frame = tk.Frame(row_frame, bg=self.colors['bg_tertiary'], width=250, height=60)
+            info_frame.grid(row=0, column=0, sticky='nw', padx=(0, 10))
+            info_frame.grid_propagate(False)  # Use grid_propagate instead of pack_propagate
+            info_frame.columnconfigure(0, weight=1)
             
-            tk.Label(info_frame,
-                    text=name,
-                    bg=self.colors['bg_tertiary'],
-                    fg=self.colors['text_primary'],
-                    font=('Segoe UI', 11, 'bold')).pack(anchor='w')
+            # Model name - reduce font size and ensure proper positioning
+            name_label = tk.Label(info_frame,
+                                 text=name,
+                                 bg=self.colors['bg_tertiary'],
+                                 fg=self.colors['text_primary'],
+                                 font=('Segoe UI', 10, 'bold'))  # Reduced from 20 to 12
+            name_label.grid(row=0, column=0, sticky='nw', pady=(2, 0))
             
-            tk.Label(info_frame,
-                    text=desc,
-                    bg=self.colors['bg_tertiary'],
-                    fg=self.colors['text_muted'],
-                    font=('Segoe UI', 8)).pack(anchor='w')
+            # Description
+            desc_label = tk.Label(info_frame,
+                                 text=desc,
+                                 bg=self.colors['bg_tertiary'],
+                                 fg=self.colors['text_muted'],
+                                 font=('Segoe UI', 6),
+                                 wraplength=180,
+                                 justify='left')
+            desc_label.grid(row=1, column=0, sticky='nw', pady=(0, 2))
             
             # Path entry
             self.path_vars[model_type] = tk.StringVar()
             path_entry = tk.Entry(row_frame,
                                  textvariable=self.path_vars[model_type],
-                                 bg=self.colors['bg_primary'],  # Changed from bg_secondary for better contrast
-                                 fg=self.colors['text_primary'],
+                                 bg=self.colors['input_bg'],
+                                 fg="#000000",
                                  font=('Consolas', 9),
                                  bd=1,
-                                 relief='solid')
-            path_entry.grid(row=0, column=1, sticky='ew', padx=(0, 10))
+                                 relief='solid',
+                                 insertbackground=self.colors['accent_cyan'],
+                                 state='readonly')
+            path_entry.grid(row=0, column=1, sticky='ew', padx=(0, 5))
             
             # Browse button
             browse_btn = tk.Button(row_frame,
-                                  text="Browse",  # Removed folder emoji
+                                  text="Browse",
                                   bg=self.colors['bg_secondary'],
                                   fg=self.colors['accent_cyan'],
-                                  font=('Segoe UI', 10),
+                                  font=('Segoe UI', 9),
                                   bd=1,
                                   relief='solid',
-                                  width=8,  # Increased width for text
+                                  width=8,
                                   command=lambda mt=model_type: self.browse_model(mt))
             browse_btn.grid(row=0, column=2)
         
@@ -290,7 +284,7 @@ class CyberThreatClassifierApp:
         control_frame.pack(fill='x', pady=(15, 0))
         
         self.load_button = tk.Button(control_frame,
-                                    text="INITIALIZE AI MODELS",  # Removed rocket emoji
+                                    text="INITIALIZE AI MODELS",
                                     bg=self.colors['bg_secondary'],
                                     fg=self.colors['accent_green'],
                                     font=('Consolas', 12, 'bold'),
@@ -300,7 +294,7 @@ class CyberThreatClassifierApp:
                                     command=self.load_models)
         self.load_button.pack(pady=(0, 10))
         
-        self.status_var = tk.StringVar(value="Awaiting model configuration...") # Removed red circle emoji
+        self.status_var = tk.StringVar(value="Awaiting model configuration...")
         self.status_label = tk.Label(control_frame,
                                     textvariable=self.status_var,
                                     bg=self.colors['bg_tertiary'],
@@ -308,16 +302,16 @@ class CyberThreatClassifierApp:
                                     font=('Consolas', 9))
         self.status_label.pack()
         
-        # Input section
-        input_outer, input_frame = self.create_glowing_frame(scrollable_frame)
-        input_outer.pack(fill='x', pady=(0, 20))
+        # Input section (left column)
+        input_outer, input_frame = self.create_glowing_frame(left_frame)
+        input_outer.pack(fill='x', expand=False)
         
         # Input header
         input_header = tk.Frame(input_frame, bg=self.colors['bg_tertiary'])
         input_header.pack(fill='x', pady=(0, 15))
         
         tk.Label(input_header,
-                text="THREAT ANALYSIS INPUT",  # Removed memo emoji
+                text="THREAT ANALYSIS INPUT",
                 bg=self.colors['bg_tertiary'],
                 fg=self.colors['accent_cyan'],
                 font=('Consolas', 14, 'bold')).pack(side='left')
@@ -329,25 +323,24 @@ class CyberThreatClassifierApp:
                 font=('Segoe UI', 9)).pack(side='right')
         
         # Text input with cyber styling
-        text_frame = tk.Frame(input_frame, bg=self.colors['bg_secondary'], bd=1, relief='solid')
-        text_frame.pack(fill='x', pady=(0, 15))
+        text_frame = tk.Frame(input_frame, bg=self.colors['input_bg'], bd=1, relief='solid')
+        text_frame.pack(fill='both', expand=True, pady=(0, 15))
         
         tk.Label(text_frame,
                 text="INPUT TEXT:",
-                bg=self.colors['bg_secondary'],
+                bg=self.colors['input_bg'],
                 fg=self.colors['accent_cyan'],
                 font=('Consolas', 9, 'bold')).pack(anchor='w', padx=8, pady=(8, 0))
         
         self.text_input = tk.Text(text_frame,
-                                 height=6,
-                                 bg=self.colors['bg_primary'],  # Changed to primary bg for better contrast
-                                 fg=self.colors['text_primary'],
-                                 font=('Consolas', 10),
-                                 bd=1,  # Added border
-                                 relief='solid',
-                                 wrap=tk.WORD,
-                                 insertbackground=self.colors['accent_cyan'])
-        self.text_input.pack(fill='x', padx=8, pady=(0, 8))
+                         bg=self.colors['input_bg'],
+                         fg=self.colors['input_text'],
+                         font=('Consolas', 10),
+                         bd=0,
+                         wrap=tk.WORD,
+                         height=8,  # Add this line - limits to 8 rows
+                         insertbackground=self.colors['accent_cyan'])
+        self.text_input.pack(fill='both', expand=True, padx=8, pady=(0, 8))
         
         # Options and controls
         options_frame = tk.Frame(input_frame, bg=self.colors['bg_tertiary'])
@@ -355,7 +348,7 @@ class CyberThreatClassifierApp:
         
         self.use_augmentation = tk.BooleanVar(value=False)
         aug_check = tk.Checkbutton(options_frame,
-                                  text="Enable text augmentation (if available)",  # Removed lightning emoji
+                                  text="Enable text augmentation (if available)",
                                   variable=self.use_augmentation,
                                   bg=self.colors['bg_tertiary'],
                                   fg=self.colors['text_secondary'],
@@ -370,7 +363,7 @@ class CyberThreatClassifierApp:
         action_frame.pack(fill='x')
         
         self.predict_button = tk.Button(action_frame,
-                                       text="ANALYZE THREAT",  # Removed magnifying glass emoji
+                                       text="ANALYZE THREAT",
                                        bg=self.colors['bg_secondary'],
                                        fg=self.colors['accent_green'],
                                        font=('Consolas', 12, 'bold'),
@@ -382,7 +375,7 @@ class CyberThreatClassifierApp:
         self.predict_button.pack(side='left', padx=(0, 10))
         
         clear_button = tk.Button(action_frame,
-                                text="CLEAR",  # Removed trash emoji
+                                text="CLEAR",
                                 bg=self.colors['bg_secondary'],
                                 fg=self.colors['accent_orange'],
                                 font=('Consolas', 10, 'bold'),
@@ -392,8 +385,8 @@ class CyberThreatClassifierApp:
                                 command=self.clear_results)
         clear_button.pack(side='left')
         
-        # Results section
-        results_outer, results_frame = self.create_glowing_frame(scrollable_frame)
+        # Results section (right column)
+        results_outer, results_frame = self.create_glowing_frame(right_frame)
         results_outer.pack(fill='both', expand=True)
         
         # Results header
@@ -401,7 +394,7 @@ class CyberThreatClassifierApp:
         results_header.pack(fill='x', pady=(0, 20))
         
         tk.Label(results_header,
-                text="THREAT CLASSIFICATION RESULTS",  # Removed chart emoji
+                text="THREAT CLASSIFICATION RESULTS",
                 bg=self.colors['bg_tertiary'],
                 fg=self.colors['accent_cyan'],
                 font=('Consolas', 14, 'bold')).pack(side='left')
@@ -452,20 +445,12 @@ class CyberThreatClassifierApp:
                     fg=self.colors['text_muted'],
                     font=('Segoe UI', 9)).pack(side='left', padx=(8, 0))
             
-            # Status indicator for this model
-            status_dot = tk.Label(header,
-                                 text="OFF",  # Replaced circle emoji with text
-                                 bg=self.colors['bg_secondary'],
-                                 fg=self.colors['text_muted'],
-                                 font=('Segoe UI', 10, 'bold'))
-            status_dot.pack(side='right')
-            
             # Prediction display
             pred_frame = tk.Frame(card_frame, bg=self.colors['bg_secondary'])
             pred_frame.pack(fill='x', padx=15, pady=(0, 12))
             
             # Prediction result
-            self.result_vars[model_key] = tk.StringVar(value="Awaiting analysis...") # Removed hourglass emoji
+            self.result_vars[model_key] = tk.StringVar(value="Awaiting analysis...")
             pred_label = tk.Label(pred_frame,
                                  textvariable=self.result_vars[model_key],
                                  bg=self.colors['bg_secondary'],
@@ -482,11 +467,6 @@ class CyberThreatClassifierApp:
                                  fg=self.colors['text_muted'],
                                  font=('Consolas', 9))
             conf_label.pack(anchor='w', pady=(4, 0))
-        
-        # Bind mouse wheel to canvas
-        def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
     
     def browse_model(self, model_type):
         if model_type == "lstm":
@@ -539,11 +519,6 @@ class CyberThreatClassifierApp:
             'online': self.colors['accent_green'],
             'analyzing': self.colors['accent_cyan']
         }
-        
-        self.status_indicator.config(
-            text=status_texts.get(status, status),
-            fg=colors.get(color, self.colors['text_muted'])
-        )
     
     def load_models(self):
         """Load all models in a separate thread to prevent UI freezing"""
@@ -637,6 +612,7 @@ class CyberThreatClassifierApp:
             if model_name in self.result_frames:
                 self.result_frames[model_name].config(bg='#2d1b1b')  # Dark red tint
         else:
+            threat_level = "THREAT DETECTED" if prediction_result['class'] == 1 else "BENIGN TEXT"
             confidence = prediction_result['confidence']
             
             # Determine threat level color and styling
@@ -872,21 +848,17 @@ def main():
     root = tk.Tk()
     app = CyberThreatClassifierApp(root)
     
-    # Add window icon if available (optional)
-    try:
-        # You can add an icon file here
-        # root.iconbitmap('cyber_icon.ico')
-        pass
-    except:
-        pass
-    
-    # Make window resizable but set minimum size
-    root.minsize(900, 700)
-    
-    # Center window on screen - FIXED VERSION
+    # Process all geometry updates first
     root.update_idletasks()
-    width = 1000  # Use the actual geometry width
-    height = 800  # Use the actual geometry height
+    
+    # Set minimum size to current required size
+    min_width = root.winfo_reqwidth()
+    min_height = root.winfo_reqheight()
+    root.minsize(min_width, min_height)
+    
+    # Now center the window
+    width = min_width
+    height = min_height
     x = (root.winfo_screenwidth() // 2) - (width // 2)
     y = (root.winfo_screenheight() // 2) - (height // 2)
     root.geometry(f'{width}x{height}+{x}+{y}')
