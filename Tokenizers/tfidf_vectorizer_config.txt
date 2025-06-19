@@ -1,3 +1,0 @@
-max_features: 3000
-stop_words: english
-vocabulary_size: 3000

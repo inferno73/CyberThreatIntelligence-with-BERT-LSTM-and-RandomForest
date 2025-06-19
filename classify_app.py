@@ -1,4 +1,5 @@
 import tkinter as tk
+import nlpaug
 from tkinter import ttk, filedialog, messagebox
 import threading
 import os
@@ -36,10 +37,10 @@ class ModelComparisonApp:
         self.tfidf_vectorizer = None
         
         # Model paths
-        self.lstm_path = ""
-        self.bert_path = ""
-        self.rf_path = ""
-        self.aug_path = ""
+        self.lstm_path  = ""
+        self.bert_path  = ""
+        self.rf_path    = "Modeli\\random_forest_model.joblib"
+        self.aug_path   = "Modeli\\augmenter.pkl"
         
         self.setup_ui()
         
@@ -271,6 +272,33 @@ class ModelComparisonApp:
             class_name = "Positive" if prediction_result['class'] == 1 else "Negative"
             self.result_vars[model_name].set(f"{class_name} (Class {prediction_result['class']})")
             self.confidence_vars[model_name].set(f"Confidence: {prediction_result['confidence']:.3f}")
+            
+            # Show augmentation status if it was applied
+            if prediction_result.get('augmented', False):
+                current_text = self.result_vars[model_name].get()
+                self.result_vars[model_name].set(f"{current_text} [Augmented]")
+    
+    def apply_augmentation(self, text):
+        """Apply augmentation to input text if augmenter is loaded and enabled"""
+        if self.use_augmentation.get() and self.augmenter is not None:
+            try:
+                # Apply augmentation - this depends on your augmenter type
+                # Common nlpaug usage patterns:
+                augmented_text = self.augmenter.augment(text)
+                
+                # If augmenter returns a list, take the first element
+                if isinstance(augmented_text, list):
+                    augmented_text = augmented_text[0]
+                
+                print(f"Original text: {text}")
+                print(f"Augmented text: {augmented_text}")
+                
+                return augmented_text, True  # Return text and augmentation flag
+            except Exception as e:
+                print(f"Augmentation failed: {e}")
+                return text, False  # Return original text if augmentation fails
+        else:
+            return text, False  # Return original text if augmentation not enabled
     
     def predict(self):
         """Make predictions with all loaded models"""
@@ -338,9 +366,12 @@ class ModelComparisonApp:
     def predict_lstm(self, text):
         """Predict using LSTM model with proper tokenization and padding"""
         try:
+            # Apply augmentation if enabled
+            processed_text, was_augmented = self.apply_augmentation(text)
+            
             if not hasattr(self, 'lstm_tokenizer') or self.lstm_tokenizer is None:
                 # Try to load the tokenizer
-                tokenizer_path = 'Tokenizers/lstm_tokenizer.pkl'
+                tokenizer_path = 'Tokenizers/lstm_tokenizer_bezaug.pkl'
                 if os.path.exists(tokenizer_path):
                     with open(tokenizer_path, 'rb') as file:
                         self.lstm_tokenizer = pickle.load(file)
@@ -349,14 +380,13 @@ class ModelComparisonApp:
                     raise FileNotFoundError(f"LSTM tokenizer not found at '{tokenizer_path}'")
             
             # Tokenize and pad the input text
-            sequences = self.lstm_tokenizer.texts_to_sequences([text])
+            sequences = self.lstm_tokenizer.texts_to_sequences([processed_text])
             
             # Use the same max_length as during training
             max_length = 100  # ADJUST THIS TO YOUR TRAINING MAX_LENGTH
             padded_sequences = tf.keras.preprocessing.sequence.pad_sequences(
                 sequences, 
-                maxlen=max_length, 
-                padding='post'
+                maxlen=max_length
             )
             
             # Make prediction
@@ -366,7 +396,8 @@ class ModelComparisonApp:
             
             return {
                 'class': predicted_class,
-                'confidence': prob if predicted_class == 1 else 1 - prob
+                'confidence': prob if predicted_class == 1 else 1 - prob,
+                'augmented': was_augmented
             }
         except Exception as e:
             return {'error': f"LSTM prediction failed: {str(e)}"}
@@ -374,9 +405,12 @@ class ModelComparisonApp:
     def predict_bert(self, text):
         """Predict using BERT model"""
         try:
+            # Apply augmentation if enabled
+            processed_text, was_augmented = self.apply_augmentation(text)
+            
             # Tokenize input
             inputs = self.bert_tokenizer(
-                text,
+                processed_text,
                 return_tensors="pt",
                 truncation=True,
                 padding=True,
@@ -392,7 +426,8 @@ class ModelComparisonApp:
             
             return {
                 'class': predicted_class,
-                'confidence': confidence
+                'confidence': confidence,
+                'augmented': was_augmented
             }
         except Exception as e:
             return {'error': f"BERT prediction failed: {str(e)}"}
@@ -400,9 +435,12 @@ class ModelComparisonApp:
     def predict_rf(self, text):
         """Predict using Random Forest with TF-IDF vectorization"""
         try:
+            # Apply augmentation if enabled
+            processed_text, was_augmented = self.apply_augmentation(text)
+            
             if not hasattr(self, 'tfidf_vectorizer') or self.tfidf_vectorizer is None:
                 # Try to load the vectorizer
-                vectorizer_path = 'Tokenizers/tfidf_vectorizer.joblib'
+                vectorizer_path = 'Tokenizers/random_forest_vectorizer.joblib'
                 if os.path.exists(vectorizer_path):
                     self.tfidf_vectorizer = joblib.load(vectorizer_path)
                     print(f"TF-IDF vectorizer loaded from '{vectorizer_path}'")
@@ -410,7 +448,7 @@ class ModelComparisonApp:
                     raise FileNotFoundError(f"TF-IDF vectorizer not found at '{vectorizer_path}'")
             
             # Transform the input text using TF-IDF
-            text_tfidf = self.tfidf_vectorizer.transform([text])
+            text_tfidf = self.tfidf_vectorizer.transform([processed_text])
             
             # Make prediction
             prediction = self.rf_model.predict(text_tfidf)
@@ -421,7 +459,8 @@ class ModelComparisonApp:
             
             return {
                 'class': predicted_class,
-                'confidence': confidence
+                'confidence': confidence,
+                'augmented': was_augmented
             }
         except Exception as e:
             return {'error': f"Random Forest prediction failed: {str(e)}"}
