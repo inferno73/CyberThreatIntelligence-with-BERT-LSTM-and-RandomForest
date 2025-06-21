@@ -2,7 +2,7 @@
 
 This repository contains the implementation of a project focused on **automated detection of cyber threats in social media content** using NLP and machine learning techniques.
 
-> 📘 This is a part of my university VI (final year) project on AI for Cyber Threat Intelligence.
+> This is a part of my university VI (final year) project on AI for Cyber Threat Intelligence.
 
 ## 🔍 Objective
 
@@ -32,7 +32,7 @@ Each model was evaluated in two iterations:
 - **Iteration 1**: Using **augmented** dataset (threat class expanded)
 - **Iteration 2**: Using **original** dataset without augmentation
 
-## 🧪 Preprocessing
+## Preprocessing
 
 ### For LSTM & Random Forest:
 - Text normalization
@@ -63,9 +63,9 @@ The focus was placed on improving F1-score for the **threat class** (`1`), as co
 | BERT         | 0.91     | 0.91        | 0.91       |
 | RF           | 0.83     | 0.74        | 0.80       |
 
-✅ **Best balance** between precision and recall on threat detection was achieved with **BERT** and **LSTM with augmentation**.
+**Best balance** between precision and recall on threat detection was achieved with **BERT** and **LSTM with augmentation**.
 
-## 📦 Requirements
+##  Requirements
 
 Install dependencies using:
 
