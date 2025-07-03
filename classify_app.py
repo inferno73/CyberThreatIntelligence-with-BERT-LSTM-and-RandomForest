@@ -1,11 +1,9 @@
 import tkinter as tk
-import nlpaug
 from tkinter import ttk, filedialog, messagebox
 import threading
 import os
 from pathlib import Path
 import pickle
-
 
 # Model loading imports
 import numpy as np
@@ -15,6 +13,8 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.feature_extraction.text import TfidfVectorizer
+
+# --- BERT Imports ---
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 from torch.nn.functional import softmax
@@ -24,9 +24,7 @@ class CyberThreatClassifierApp:
     def __init__(self, root):
         self.root = root
         self.root.title("CyberGuard AI - Threat Classification System")
-        # self.root.geometry("1200x1080")
         
-        # Modern dark cybersecurity theme
         self.colors = {
             'bg_primary': '#0a0e1a',      # Deep dark blue
             'bg_secondary': '#1a1f2e',    # Slightly lighter dark blue
@@ -56,15 +54,18 @@ class CyberThreatClassifierApp:
         self.augmenter = None
         self.lstm_tokenizer = None
         self.tfidf_vectorizer = None
-        
-        # Model paths
+        self.device = None  ## --- ADDED --- ## To store CPU or GPU device
+
+        # Model paths (you can set defaults here if you want)
         self.lstm_path  = ""
         self.bert_path  = ""
-        self.rf_path    = "Modeli\\random_forest_model.joblib"
-        self.aug_path   = "Modeli\\augmenter.pkl"
+        self.rf_path    = "" # e.g., "Modeli/random_forest_model.joblib"
+        self.aug_path   = "" # e.g., "Modeli/augmenter.pkl"
         
         self.setup_ui()
-        
+
+    # ... [No changes needed in setup_theme, create_glowing_frame, setup_ui] ...
+    # ... [Copy the rest of your UI methods here] ...
     def setup_theme(self):
         """Configure the modern cybersecurity theme"""
         self.root.configure(bg=self.colors['bg_primary'])
@@ -467,7 +468,6 @@ class CyberThreatClassifierApp:
                                  fg=self.colors['text_muted'],
                                  font=('Consolas', 9))
             conf_label.pack(anchor='w', pady=(4, 0))
-    
     def browse_model(self, model_type):
         if model_type == "lstm":
             file_path = filedialog.askopenfilename(
@@ -503,7 +503,6 @@ class CyberThreatClassifierApp:
             if file_path:
                 self.path_vars['augmenter'].set(file_path)
                 self.aug_path = file_path
-    
     def update_system_status(self, status, color):
         """Update the main system status indicator"""
         status_texts = {
@@ -524,8 +523,11 @@ class CyberThreatClassifierApp:
         """Load all models in a separate thread to prevent UI freezing"""
         def load_thread():
             try:
-                self.root.after(0, lambda: self.update_system_status('loading', 'loading'))
-                self.root.after(0, lambda: self.status_var.set("Initializing AI systems..."))
+                ## --- ADDED --- ## Detect device once at the beginning
+                self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                device_name = "GPU (CUDA)" if torch.cuda.is_available() else "CPU"
+
+                self.root.after(0, lambda: self.status_var.set(f"Initializing AI systems on {device_name}..."))
                 self.root.after(0, lambda: self.load_button.config(state="disabled"))
                 
                 models_loaded = 0
@@ -538,12 +540,18 @@ class CyberThreatClassifierApp:
                     models_loaded += 1
                     self.root.after(0, lambda: self.status_var.set(f"LSTM loaded ({models_loaded}/{total_models})"))
                 
-                # Load BERT
-                if self.bert_path and os.path.exists(self.bert_path):
+                # Load BERT ## --- MODIFIED SECTION --- ##
+                if self.bert_path and os.path.isdir(self.bert_path): # Check if it's a directory
                     self.root.after(0, lambda: self.status_var.set("Loading BERT Transformer..."))
                     self.bert_tokenizer = AutoTokenizer.from_pretrained(self.bert_path)
                     self.bert_model = AutoModelForSequenceClassification.from_pretrained(self.bert_path)
+                    
+                    # Move model to the detected device (GPU or CPU)
+                    self.bert_model.to(self.device)
+                    
+                    # Set to evaluation mode
                     self.bert_model.eval()
+                    
                     models_loaded += 1
                     self.root.after(0, lambda: self.status_var.set(f"BERT loaded ({models_loaded}/{total_models})"))
                 
@@ -555,7 +563,7 @@ class CyberThreatClassifierApp:
                     self.root.after(0, lambda: self.status_var.set(f"Random Forest loaded ({models_loaded}/{total_models})"))
                 
                 # Load Augmenter (Optional)
-                if hasattr(self, 'aug_path') and self.aug_path and os.path.exists(self.aug_path):
+                if self.aug_path and os.path.exists(self.aug_path):
                     try:
                         self.root.after(0, lambda: self.status_var.set("Loading text augmenter..."))
                         with open(self.aug_path, 'rb') as f:
@@ -566,32 +574,23 @@ class CyberThreatClassifierApp:
                         print(f"Augmenter loading failed: {e}")
                 
                 if models_loaded > 0:
-                    self.root.after(0, lambda: self.update_system_status('online', 'online'))
-                    self.root.after(0, lambda: self.status_var.set(f"System ready! {models_loaded}/{total_models} AI models active"))
+                    self.root.after(0, lambda: self.status_var.set(f"System ready! {models_loaded}/{total_models} AI models active on {device_name}"))
                     self.root.after(0, lambda: self.predict_button.config(state="normal"))
-                    
-                    # Update predict button appearance
-                    self.root.after(0, lambda: self.predict_button.config(
-                        bg=self.colors['accent_green'],
-                        fg=self.colors['bg_primary']
-                    ))
                 else:
-                    self.root.after(0, lambda: self.update_system_status('offline', 'offline'))
                     self.root.after(0, lambda: self.status_var.set("No models loaded. Check file paths."))
                     
             except Exception as e:
                 error_msg = f"Initialization failed: {str(e)}"
                 self.root.after(0, lambda: self.status_var.set(error_msg))
-                self.root.after(0, lambda: self.update_system_status('offline', 'offline'))
                 self.root.after(0, lambda: messagebox.showerror("System Error", f"Failed to initialize AI models:\n{str(e)}"))
             finally:
                 self.root.after(0, lambda: self.load_button.config(state="normal"))
         
-        # Start loading in separate thread
         thread = threading.Thread(target=load_thread)
         thread.daemon = True
         thread.start()
-    
+
+    # ... [No changes needed in clear_results, update_result_display, apply_augmentation, predict] ...
     def clear_results(self):
         """Clear all prediction results"""
         for model_name in ["LSTM", "BERT", "Random Forest"]:
@@ -602,7 +601,6 @@ class CyberThreatClassifierApp:
                 self.result_frames[model_name].config(bg=self.colors['bg_secondary'])
         
         self.text_input.delete("1.0", tk.END)
-    
     def update_result_display(self, model_name, prediction_result):
         """Update the display with prediction results"""
         if 'error' in prediction_result:
@@ -648,7 +646,6 @@ class CyberThreatClassifierApp:
             if prediction_result.get('augmented', False):
                 current_text = self.result_vars[model_name].get()
                 self.result_vars[model_name].set(f"{current_text} [AUG]")
-    
     def apply_augmentation(self, text):
         """Apply augmentation to input text if augmenter is loaded and enabled"""
         if self.use_augmentation.get() and self.augmenter is not None:
@@ -670,7 +667,6 @@ class CyberThreatClassifierApp:
                 return text, False  # Return original text if augmentation fails
         else:
             return text, False  # Return original text if augmentation not enabled
-    
     def predict(self):
         """Make predictions with all loaded models"""
         text = self.text_input.get("1.0", tk.END).strip()
@@ -682,10 +678,10 @@ class CyberThreatClassifierApp:
         def predict_thread():
             try:
                 # Update system status
-                self.root.after(0, lambda: self.update_system_status('analyzing', 'analyzing'))
+                #self.root.after(0, lambda: self.update_system_status('analyzing', 'analyzing'))
                 
                 # Clear previous results
-                self.root.after(0, self.clear_results)
+                #self.root.after(0, self.clear_results)
                 
                 # LSTM Prediction
                 if self.lstm_model is not None:
@@ -730,17 +726,16 @@ class CyberThreatClassifierApp:
                     self.root.after(0, lambda: self.result_vars["Random Forest"].set("Model not loaded"))
                 
                 # Update system status back to online
-                self.root.after(0, lambda: self.update_system_status('online', 'online'))
+                #self.root.after(0, lambda: self.update_system_status('online', 'online'))
                     
             except Exception as e:
                 self.root.after(0, lambda: messagebox.showerror("Analysis Error", f"Threat analysis failed:\n{str(e)}"))
-                self.root.after(0, lambda: self.update_system_status('online', 'online'))
+                #self.root.after(0, lambda: self.update_system_status('online', 'online'))
         
         # Start prediction in separate thread
         thread = threading.Thread(target=predict_thread)
         thread.daemon = True
         thread.start()
-    
     def predict_lstm(self, text):
         """Predict using LSTM model with proper tokenization and padding"""
         try:
@@ -783,7 +778,6 @@ class CyberThreatClassifierApp:
     def predict_bert(self, text):
         """Predict using BERT model"""
         try:
-            # Apply augmentation if enabled
             processed_text, was_augmented = self.apply_augmentation(text)
             
             # Tokenize input
@@ -792,24 +786,26 @@ class CyberThreatClassifierApp:
                 return_tensors="pt",
                 truncation=True,
                 padding=True,
-                max_length=512
+                max_length=128  ## --- MODIFIED --- ## Match the training script's max_length
             )
+            
+            ## --- ADDED --- ## Move input tensors to the same device as the model
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
             
             # Make prediction
             with torch.no_grad():
                 outputs = self.bert_model(**inputs)
                 probabilities = softmax(outputs.logits, dim=-1)
-                predicted_class = torch.argmax(probabilities, dim=-1).item()
-                confidence = float(torch.max(probabilities).item())
+                confidence = torch.max(probabilities).item()
+                predicted_class = torch.argmax(probabilities).item()
             
             return {
                 'class': predicted_class,
-                'confidence': confidence,
+                'confidence': float(confidence),
                 'augmented': was_augmented
             }
         except Exception as e:
             return {'error': f"BERT analysis failed: {str(e)}"}
-    
     def predict_rf(self, text):
         """Predict using Random Forest with TF-IDF vectorization"""
         try:
@@ -843,7 +839,7 @@ class CyberThreatClassifierApp:
         except Exception as e:
             return {'error': f"Random Forest analysis failed: {str(e)}"}
 
-
+# You can keep your main function as it is
 def main():
     root = tk.Tk()
     app = CyberThreatClassifierApp(root)
